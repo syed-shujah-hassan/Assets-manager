@@ -1,0 +1,232 @@
+You are working on an existing project called "Rescue Management System (RMS)".
+
+IMPORTANT CONTEXT:
+- The project already contains a React Native (Expo) mobile app.
+- It includes:
+  1) Citizen (User) Dashboard
+  2) Responder Dashboard
+- DO NOT break, remove, or modify any existing business logic.
+- You may improve UI and styling only.
+- The mobile app must continue working exactly as it is.
+
+GOAL:
+
+1) Upgrade the UI of the existing React Native mobile app:
+   - User Dashboard (Mobile)
+   - Responder Dashboard (Mobile)
+
+2) Create a NEW Web-based Admin Dashboard inside the SAME repository.
+
+The Admin Dashboard must:
+- Be completely separate from the mobile app
+- Run in a browser
+- Be inside a new folder: /admin-dashboard
+- Not affect the mobile app in any way
+
+--------------------------------------------------
+PROJECT STRUCTURE
+--------------------------------------------------
+
+Keep existing structure.
+
+Add:
+
+root/
+ ├── mobile-app/ (existing React Native app - DO NOT BREAK)
+ ├── admin-dashboard/ (new React Web app)
+
+Admin dashboard should run using:
+
+cd admin-dashboard
+npm install
+npm start
+
+--------------------------------------------------
+UI REQUIREMENTS (VERY IMPORTANT)
+--------------------------------------------------
+
+ALL dashboards (User, Responder, Admin) must have:
+
+- Clean, modern layout
+- Premium professional design
+- Soft color palette (Navy, Blue, White, Light Gray)
+- Proper spacing
+- Rounded cards
+- Smooth shadows
+- Modern typography
+- Consistent design system
+- Production-ready look
+- No basic or student-level UI
+- No ugly layouts
+
+Everything must look like a real-world government emergency system.
+
+--------------------------------------------------
+1) USER DASHBOARD (React Native - Mobile)
+--------------------------------------------------
+
+Improve UI only (do not change logic).
+
+Must include:
+- Modern header with welcome message
+- Large emergency button (red circular button)
+- Active request status card
+- Recent requests section
+- Clean bottom navigation
+- Card-based layout
+- Premium spacing and shadows
+
+Design inspiration:
+Uber / Careem / Modern emergency apps.
+
+--------------------------------------------------
+2) RESPONDER DASHBOARD (React Native - Mobile)
+--------------------------------------------------
+
+Improve UI only (no logic changes).
+
+Must include:
+- Availability toggle (Available / Busy)
+- Active assignment card
+- Request list in clean card format
+- Accept / Reject buttons (modern design)
+- Map preview section (UI only if needed)
+- Profile section
+- Professional typography
+- Clean spacing
+
+Must look production-ready.
+
+--------------------------------------------------
+3) ADMIN DASHBOARD (WEB - React)
+--------------------------------------------------
+
+Create new folder:
+
+/admin-dashboard
+
+Technology:
+- React (Web)
+- React Router
+- Simple clean CSS (no heavy UI libraries)
+- Sidebar layout
+- Protected routes
+- Premium SaaS-style UI
+
+--------------------------------------------------
+ADMIN AUTH
+--------------------------------------------------
+
+Route: /login
+
+- Email field
+- Password field
+- Login button
+- If fields are non-empty → simulate login success
+- Save auth flag in localStorage
+- Redirect to /dashboard
+- If not logged in → redirect all routes to /login
+
+--------------------------------------------------
+ADMIN LAYOUT
+--------------------------------------------------
+
+Left Sidebar:
+- Dashboard
+- Emergency Requests
+- Responders
+- Users
+- Feedback
+- Logs / Reports
+- Settings
+
+Top Bar:
+"Rescue Management System – Admin"
+
+Main content area:
+Render pages using React Router.
+
+--------------------------------------------------
+ADMIN PAGES
+--------------------------------------------------
+
+1) Dashboard:
+- Statistic cards:
+  - Total Requests
+  - Active Requests
+  - Resolved Requests
+  - Total Responders
+- Recent 5 requests table
+
+2) Emergency Requests:
+- Table with:
+  ID, User, Time, Location, Assigned Responder, Status
+- Filter by status
+- Click row → open modal with full details
+
+3) Responders:
+- Table:
+  Name, Email, Phone, Zone, Availability
+- Add Responder form
+- Edit button
+- Activate / Deactivate button
+- All using local dummy state
+
+4) Users:
+- Table:
+  Name, Email, Phone, CNIC, Total Requests
+- Optional: View Requests button
+
+5) Feedback:
+- Read-only table:
+  Request ID, User, Responder, Rating, Comment, Date
+
+6) Logs & Reports:
+- Logs table:
+  Timestamp, Action, Details
+- Report summary cards
+- Small dummy chart (optional)
+
+7) Settings:
+- Search Radius (meters)
+- Duplicate Request Time Window (minutes)
+- Default City
+- Save button with success message
+
+--------------------------------------------------
+BACKEND
+--------------------------------------------------
+
+No real backend integration yet.
+
+Create src/api.js inside admin-dashboard:
+
+const BASE_URL = "http://localhost:3000/api";
+
+Create placeholder async functions:
+- fetchRequests()
+- fetchResponders()
+- fetchUsers()
+- fetchFeedback()
+- fetchLogs()
+- fetchReports()
+- fetchSettings()
+- saveSettings()
+
+Return dummy hardcoded data only.
+
+--------------------------------------------------
+FINAL REQUIREMENT
+--------------------------------------------------
+
+All dashboards (User, Responder, Admin) must look:
+
+- Clean
+- Premium
+- Professional
+- Modern
+- Production-ready
+- Consistent across mobile and web
+
+Do NOT create basic layouts.
+Design should look like a real national-level Rescue Management System.
