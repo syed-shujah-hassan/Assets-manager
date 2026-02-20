@@ -1,0 +1,357 @@
+You are an expert React Native (Expo) and React Web frontend engineer.
+
+You are working on a Final Year Project called:
+
+"Rescue Management System (RMS)"
+
+This project already contains a React Native (Expo) mobile application with two roles:
+1) Citizen (User)
+2) Responder
+
+IMPORTANT RULES:
+- DO NOT break existing business logic.
+- DO NOT remove existing features.
+- You may improve UI, layout, structure, and styling only.
+- The mobile app must continue working.
+- Backend integration is NOT required yet.
+- All API calls must be placeholder async functions.
+
+===========================================================
+PROJECT GOALS
+===========================================================
+
+1) Upgrade and modernize the EXISTING React Native mobile app UI:
+   - Citizen Dashboard
+   - Responder Dashboard
+
+2) Build a NEW Web-based Admin Dashboard
+   - Inside the SAME repository
+   - Inside a new folder: /admin-dashboard
+   - It must run separately in the browser
+   - It must NOT affect the mobile app
+
+===========================================================
+PROJECT STRUCTURE
+===========================================================
+
+Keep existing structure.
+
+Add:
+
+root/
+ ├── mobile-app/ (Existing React Native Expo app - DO NOT BREAK)
+ ├── admin-dashboard/ (New React Web app)
+
+Admin dashboard should run using:
+
+cd admin-dashboard
+npm install
+npm start
+
+===========================================================
+GLOBAL UI REQUIREMENTS (VERY IMPORTANT)
+===========================================================
+
+ALL dashboards (Citizen, Responder, Admin) must have:
+
+- Clean modern layout
+- Premium professional design
+- Soft color palette:
+  - Navy / Dark Blue
+  - Teal / Green (primary buttons)
+  - White background
+  - Light Gray sections
+  - Red only for emergencies
+- Rounded cards
+- Smooth shadow effects
+- Proper spacing and padding
+- Clear readable fonts
+- Modern typography
+- Consistent design system
+- Production-ready appearance
+- No basic or student-level UI
+- No messy alignment
+- No outdated layouts
+
+The app must look like a real government-level emergency system.
+
+===========================================================
+MOBILE APP (React Native - Expo)
+===========================================================
+
+Use:
+- Functional components
+- React Navigation (Stack + Bottom Tabs)
+- Placeholder async functions with setTimeout
+- Clean StyleSheet styling
+
+-----------------------------------------------------------
+ROLE SELECTION SCREEN
+-----------------------------------------------------------
+
+RoleSelectionScreen:
+- Two large buttons:
+  - "I am a Citizen"
+  - "I am a Responder"
+- Navigate to respective stack.
+
+RootStack:
+- RoleSelectionScreen
+- CitizenStack
+- ResponderStack
+
+===========================================================
+CITIZEN (USER) SIDE
+===========================================================
+
+Screens:
+
+1) CitizenLoginScreen
+2) CitizenRegisterScreen
+3) CitizenHomeScreen
+4) SubmitEmergencyRequestScreen
+5) TrackRequestScreen
+6) RequestDetailsScreen
+7) SubmitFeedbackScreen
+8) CitizenProfileScreen
+
+-----------------------------------------------------------
+Citizen UI Requirements
+-----------------------------------------------------------
+
+CitizenHomeScreen must include:
+- Modern header with welcome message
+- Large red circular "Emergency" button
+- Active request status card
+- Recent requests list
+- Clean bottom navigation
+- Card-based layout
+- Premium spacing and shadows
+
+SubmitEmergencyRequestScreen:
+- Placeholder camera/photo picker
+- Description (multi-line input)
+- GPS location (dummy static value allowed)
+- Submit button
+- Call: submitEmergencyRequest()
+
+TrackRequestScreen:
+- List of requests (dummy data)
+- Status labels: Pending / Assigned / En Route / Resolved
+- Tap → open RequestDetailsScreen
+
+RequestDetailsScreen:
+- Description
+- Location text
+- Assigned responder name
+- Status timeline
+- Show "Submit Feedback" only if Resolved
+
+SubmitFeedbackScreen:
+- Star rating (1–5)
+- Optional comment
+- Call submitFeedback()
+
+CitizenProfileScreen:
+- Show user info
+- Logout button → back to RoleSelection
+
+===========================================================
+RESPONDER SIDE
+===========================================================
+
+Screens:
+
+1) ResponderLoginScreen
+2) ResponderHomeScreen
+3) ResponderActiveRequestsScreen
+4) ResponderRequestDetailsScreen
+5) ResponderHistoryScreen
+6) ResponderProfileScreen
+
+-----------------------------------------------------------
+Responder UI Requirements
+-----------------------------------------------------------
+
+ResponderHomeScreen:
+- Availability toggle (Available / Busy)
+- Tabs:
+   - Active Requests
+   - My History
+- Clean card layout
+
+ResponderActiveRequestsScreen:
+- List of incoming requests
+- Show short details + distance (dummy text)
+- Tap → open ResponderRequestDetailsScreen
+
+ResponderRequestDetailsScreen:
+- Full request info
+- Photo placeholder
+- Description
+- Location
+- Buttons:
+   - Accept
+   - Reject
+
+If accepted:
+- Show:
+   - Mark En Route
+   - Mark Arrived
+   - Mark Resolved
+
+Each action updates local state and calls:
+updateRequestStatus()
+
+ResponderHistoryScreen:
+- List of completed/cancelled requests
+
+ResponderProfileScreen:
+- Responder info
+- Availability toggle
+- Logout button
+
+===========================================================
+ADMIN DASHBOARD (WEB - React)
+===========================================================
+
+Create inside:
+
+/admin-dashboard
+
+Use:
+- React (Web)
+- React Router
+- Simple CSS
+- Sidebar layout
+- Protected routes
+- Modern SaaS-style design
+- Premium dashboard layout
+
+-----------------------------------------------------------
+ADMIN AUTH
+-----------------------------------------------------------
+
+Route: /login
+
+- Email
+- Password
+- Login button
+- If non-empty → simulate login success
+- Save auth flag in localStorage
+- Redirect to /dashboard
+- Protect all routes
+
+-----------------------------------------------------------
+ADMIN LAYOUT
+-----------------------------------------------------------
+
+Sidebar:
+- Dashboard
+- Emergency Requests
+- Responders
+- Users
+- Feedback
+- Logs / Reports
+- Settings
+
+Top Bar:
+"Rescue Management System – Admin"
+
+Main area:
+Render pages via React Router.
+
+-----------------------------------------------------------
+ADMIN PAGES
+-----------------------------------------------------------
+
+1) Dashboard:
+- Statistic cards:
+   - Total Requests
+   - Active Requests
+   - Resolved Requests
+   - Total Responders
+- Recent 5 requests table
+
+2) Emergency Requests:
+- Table:
+   ID, User, Time, Location, Assigned Responder, Status
+- Filter by status
+- Click row → open modal with details
+
+3) Responders:
+- Table:
+   Name, Email, Phone, Zone, Availability
+- Add responder form
+- Edit button
+- Activate / Deactivate
+- Use local dummy state
+
+4) Users:
+- Table:
+   Name, Email, Phone, CNIC, Total Requests
+- Optional: View Requests button
+
+5) Feedback:
+- Read-only table:
+   Request ID, User, Responder, Rating, Comment, Date
+
+6) Logs & Reports:
+- Logs table:
+   Timestamp, Action, Details
+- Report summary cards
+- Optional small dummy chart
+
+7) Settings:
+- Search Radius (meters)
+- Duplicate Time Window (minutes)
+- Default City
+- Save button with success message
+
+===========================================================
+BACKEND (FOR BOTH MOBILE & ADMIN)
+===========================================================
+
+No real backend integration.
+
+Create placeholder async functions like:
+
+- loginUser()
+- registerUser()
+- submitEmergencyRequest()
+- submitFeedback()
+- fetchRequests()
+- fetchResponders()
+- updateRequestStatus()
+- fetchUsers()
+- fetchFeedback()
+- fetchLogs()
+- saveSettings()
+
+Use setTimeout to simulate network delay.
+
+In admin-dashboard create:
+
+src/api.js
+
+const BASE_URL = "http://localhost:3000/api";
+
+Return hardcoded dummy data.
+
+===========================================================
+FINAL REQUIREMENT
+===========================================================
+
+The entire system (Mobile + Web Admin) must look:
+
+- Clean
+- Premium
+- Professional
+- Modern
+- Government-grade
+- Production-ready
+- Consistent UI across platforms
+
+Do NOT create basic layouts.
+Do NOT create outdated UI.
+Everything must feel like a real deployed emergency management system.
