@@ -170,6 +170,15 @@ function configureExpoAndLanding(app: express.Application) {
   const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
   const appName = getAppName();
 
+  const adminDashboardPath = path.resolve(process.cwd(), "admin-dashboard", "index.html");
+  app.get("/admin", (_req: Request, res: Response) => {
+    if (fs.existsSync(adminDashboardPath)) {
+      res.sendFile(adminDashboardPath);
+    } else {
+      res.status(404).send("Admin dashboard not found");
+    }
+  });
+
   log("Serving static Expo files with dynamic manifest routing");
 
   app.use((req: Request, res: Response, next: NextFunction) => {
