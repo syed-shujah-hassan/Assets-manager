@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, FlatList, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import { fetchResponderHistory, EmergencyRequest } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -16,19 +17,31 @@ function getStatusColor(status: string) {
 
 export default function ResponderHistoryScreen() {
   const insets = useSafeAreaInsets();
+  const { user, isReady } = useAuth();
   const [requests, setRequests] = useState<EmergencyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    if (!user?.id) return;
     try {
-      const data = await fetchResponderHistory();
+      const data = await fetchResponderHistory(user.id);
       setRequests(data);
-    } catch (e) {} finally { setLoading(false); }
-  };
+    } catch (e) {
+      console.error('History load error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (isReady && user?.id) {
+      loadData();
+    } else if (isReady && !user) {
+      setLoading(false);
+    }
+  }, [isReady, user?.id, loadData]);
 
   const onRefresh = async () => {
     setRefreshing(true);

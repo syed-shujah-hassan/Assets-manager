@@ -12,7 +12,7 @@ const menuItems = [
   { path: '/settings', icon: '⚙️', label: 'Settings' },
 ];
 
-function Sidebar({ collapsed, onToggle, currentPath }) {
+function Sidebar({ collapsed, onToggle, currentPath, unreadCount = 0 }) {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
@@ -35,6 +35,9 @@ function Sidebar({ collapsed, onToggle, currentPath }) {
           >
             <span className="sidebar-icon">{item.icon}</span>
             {!collapsed && <span className="sidebar-label">{item.label}</span>}
+            {item.path === '/requests' && unreadCount > 0 && (
+              <span className="sidebar-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
           </Link>
         ))}
       </nav>

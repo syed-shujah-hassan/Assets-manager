@@ -37,6 +37,9 @@ export default function CitizenHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
+  const [isListening, setIsListening] = useState(false);
+  const [description, setDescription] = useState('');
+
   const loadRequests = async () => {
     try {
       const data = await fetchRequests('citizen', user?.id);

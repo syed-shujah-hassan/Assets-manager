@@ -12,12 +12,13 @@ export default function CitizenRegisterScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [cnic, setCnic] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim() || !phone.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !phone.trim() || !cnic.trim()) {
       setError('Please fill in all fields');
       return;
     }
@@ -25,7 +26,7 @@ export default function CitizenRegisterScreen() {
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const user = await registerUser(name, email, password, phone);
+      const user = await registerUser(name, email, password, phone, cnic);
       login(user);
       router.dismissAll();
       router.replace('/(citizen-tabs)');
@@ -47,6 +48,11 @@ export default function CitizenRegisterScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Text style={styles.backBtnText}>Back to Login</Text>
+        </Pressable>
+
         <View style={styles.header}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Register to access emergency services</Text>
@@ -85,6 +91,21 @@ export default function CitizenRegisterScreen() {
           </View>
 
           <View style={styles.inputGroup}>
+            <Text style={styles.label}>CNIC</Text>
+            <View style={styles.inputWrap}>
+              <Ionicons name="id-card-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={cnic}
+                onChangeText={setCnic}
+                placeholder="42101-1234567-8"
+                placeholderTextColor={Colors.textMuted}
+                autoCapitalize="characters"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
             <View style={styles.inputWrap}>
               <Ionicons name="lock-closed-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
@@ -112,6 +133,14 @@ export default function CitizenRegisterScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   scrollContent: { flexGrow: 1, padding: 24 },
+  backBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8,
+    marginBottom: 20,
+    marginTop: Platform.OS === 'web' ? 0 : 10
+  },
+  backBtnText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: Colors.textPrimary },
   header: { marginBottom: 24, marginTop: 8 },
   title: { fontSize: 24, fontFamily: 'Inter_700Bold', color: Colors.textPrimary },
   subtitle: { fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginTop: 4 },
@@ -126,15 +155,18 @@ const styles = StyleSheet.create({
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: Colors.background, borderRadius: 12, borderWidth: 1, borderColor: Colors.border,
+    ...(Platform.OS === 'web' ? { outlineWidth: 0 } : {}),
   },
   inputIcon: { paddingLeft: 14 },
   input: {
     flex: 1, paddingVertical: 14, paddingHorizontal: 10,
     fontSize: 15, fontFamily: 'Inter_400Regular', color: Colors.textPrimary,
+    ...(Platform.OS === 'web' ? { outlineWidth: 0 } : {}),
   },
   button: {
     backgroundColor: Colors.teal, borderRadius: 12, paddingVertical: 16,
     alignItems: 'center', marginTop: 8, ...Colors.shadow,
+    ...(Platform.OS === 'web' ? { outlineWidth: 0 } : {}),
   },
   buttonText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: Colors.white },
 });

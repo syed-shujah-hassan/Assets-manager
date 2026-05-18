@@ -87,9 +87,31 @@ export default function RequestDetailsScreen() {
             <View>
               <Text style={styles.responderName}>{request.responderName}</Text>
               <Text style={styles.responderInfo}>Emergency Rescue Unit</Text>
+              {request.responderPhone && (
+                <Text style={styles.responderContact}>{request.responderPhone}</Text>
+              )}
             </View>
           </View>
         </View>
+      )}
+
+      {(request.status === 'Assigned' || request.status === 'En Route' || request.status === 'Arrived') && (
+        <Pressable
+          style={({ pressed }) => [styles.mapButton, pressed && { opacity: 0.9 }]}
+          onPress={() =>
+            router.push({
+              pathname: '/citizen/track-request',
+              params: {
+                id: request.id,
+                lat: String(request.coordinates.lat),
+                lng: String(request.coordinates.lng),
+              },
+            })
+          }
+        >
+          <Ionicons name="navigate-outline" size={18} color={Colors.white} />
+          <Text style={styles.mapButtonText}>View Live Location (Preview)</Text>
+        </Pressable>
       )}
 
       {request.status !== 'Cancelled' && (
@@ -155,7 +177,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white, borderRadius: 14, padding: 18,
     marginBottom: 14, ...Colors.shadow,
   },
-  cardTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 12 },
+  cardTitle: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    color: Colors.textSecondary,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   descText: { fontSize: 15, fontFamily: 'Inter_400Regular', color: Colors.textPrimary, lineHeight: 22 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   locationText: { fontSize: 15, fontFamily: 'Inter_500Medium', color: Colors.textPrimary, flex: 1 },
@@ -167,6 +196,19 @@ const styles = StyleSheet.create({
   },
   responderName: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.textPrimary },
   responderInfo: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textMuted, marginTop: 1 },
+  responderContact: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.teal, marginTop: 2 },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.navy,
+    borderRadius: 14,
+    paddingVertical: 16,
+    marginTop: 4,
+    ...Colors.shadow,
+  },
+  mapButtonText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.white },
   timeline: { gap: 0 },
   timelineStep: { flexDirection: 'row', alignItems: 'flex-start', minHeight: 40 },
   timelineLeft: { alignItems: 'center', width: 24, marginRight: 12 },

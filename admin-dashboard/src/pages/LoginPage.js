@@ -1,21 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
+import { loginAdmin } from '../api';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       setError('Please enter both email and password');
       return;
     }
-    localStorage.setItem('rms_admin_auth', 'true');
-    navigate('/');
+    setError('');
+    setLoading(true);
+    try {
+      localStorage.removeItem('rms_admin_token');
+      await loginAdmin(email.trim(), password.trim());
+      localStorage.setItem('rms_admin_auth', 'true');
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,8 +67,8 @@ function LoginPage() {
             />
           </div>
 
-          <button type="submit" className="login-btn">
-            Sign In
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 

@@ -1,14 +1,29 @@
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform, Image } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import * as Haptics from 'expo-haptics';
+import { useAuth } from '@/lib/auth-context';
 
 export default function RoleSelectionScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const { user, isReady } = useAuth();
+
+  useEffect(() => {
+    if (isReady && user) {
+      if (user.role === 'responder') {
+        router.replace('/(responder-tabs)');
+      } else {
+        router.replace('/(citizen-tabs)');
+      }
+    }
+  }, [isReady, user]);
+
+  if (!isReady || user) return null;
 
   const handleSelect = (role: 'citizen' | 'responder') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/lib/auth-context';
-import { fetchRequests, EmergencyRequest } from '@/lib/api';
+import { fetchRequests, EmergencyRequest, fetchResponderById, updateResponderAvailability, updateResponderLocation } from '@/lib/api';
+import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 
 function getStatusColor(status: string) {
@@ -22,18 +23,70 @@ export default function ResponderHomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [available, setAvailable] = useState(true);
+  const [availabilityText, setAvailabilityText] = useState<'Available' | 'Busy' | 'Inactive'>('Available');
   const [requests, setRequests] = useState<EmergencyRequest[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+
+  const loadAvailability = async () => {
+    if (!user?.id) return;
+    try {
+      const responder = await fetchResponderById(user.id);
+      setAvailabilityText(responder.availability);
+      setAvailable(responder.availability === 'Available');
+    } catch (e) {}
+  };
 
   const loadRequests = async () => {
     try {
-      const data = await fetchRequests('responder');
+      const data = await fetchRequests('responder', user?.id);
       setRequests(data);
     } catch (e) {}
   };
 
-  useEffect(() => { loadRequests(); }, []);
+  const startTracking = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+
+      // Simple foreground watcher
+      await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 10000,
+          distanceInterval: 20,
+        },
+        async (pos) => {
+          if (!user?.id || !available) return;
+          try {
+            await updateResponderLocation(user.id, {
+              coordinates: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+              accuracy: pos.coords.accuracy ?? undefined,
+              at: new Date(pos.timestamp).toISOString(),
+            });
+          } catch (e) {}
+        }
+      );
+    } catch (err) {}
+  };
+
+  useEffect(() => {
+    if (available && user?.id) {
+      startTracking();
+    }
+  }, [available, user?.id]);
+
+  useEffect(() => {
+    loadRequests();
+    loadAvailability();
+
+    const interval = setInterval(() => {
+      loadAvailability();
+    }, 10000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -91,9 +144,9 @@ export default function ResponderHomeScreen() {
             <Switch
               value={available}
               onValueChange={(val) => {
-                setAvailable(val);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
+              disabled
               trackColor={{ false: '#3e3e3e', true: 'rgba(16,185,129,0.3)' }}
               thumbColor={available ? Colors.success : '#f4f3f4'}
             />
@@ -101,7 +154,7 @@ export default function ResponderHomeScreen() {
         </View>
         <View style={styles.availBadge}>
           <View style={[styles.availDot, { backgroundColor: available ? Colors.success : Colors.textMuted }]} />
-          <Text style={styles.availText}>{available ? 'Available' : 'Busy'}</Text>
+          <Text style={styles.availText}>{availabilityText}</Text>
         </View>
       </LinearGradient>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,7 +13,17 @@ export default function ResponderLoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, user, isReady } = useAuth();
+
+  useEffect(() => {
+    if (isReady && user?.role === 'responder') {
+      router.replace('/(responder-tabs)');
+    }
+  }, [isReady, user]);
+
+  if (isReady && user?.role === 'responder') {
+    return null;
+  }
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -46,6 +56,11 @@ export default function ResponderLoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <Pressable style={styles.backBtn} onPress={() => router.replace('/')}>
+          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Text style={styles.backBtnText}>Change Role</Text>
+        </Pressable>
+
         <View style={styles.header}>
           <View style={styles.iconWrap}>
             <MaterialCommunityIcons name="ambulance" size={36} color={Colors.danger} />
@@ -101,6 +116,17 @@ export default function ResponderLoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   scrollContent: { flexGrow: 1, padding: 24, justifyContent: 'center' },
+  backBtn: { 
+    position: 'absolute', 
+    top: Platform.OS === 'web' ? 20 : 10, 
+    left: 0, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8,
+    zIndex: 10,
+    padding: 10
+  },
+  backBtnText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: Colors.textPrimary },
   header: { alignItems: 'center', marginBottom: 32 },
   iconWrap: {
     width: 72, height: 72, borderRadius: 20,

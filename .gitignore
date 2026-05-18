@@ -38,4 +38,7 @@ yarn-error.*
 *.tsbuildinfo
 .vercel
 
+# Admin dashboard build output (Vercel builds fresh)
+admin-dashboard/build/
+
 .env

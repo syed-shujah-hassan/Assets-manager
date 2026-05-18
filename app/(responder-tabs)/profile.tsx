@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform, ScrollView, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -6,18 +6,47 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/lib/auth-context';
 import * as Haptics from 'expo-haptics';
+import { fetchResponderById } from '@/lib/api';
 
 export default function ResponderProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const [available, setAvailable] = useState(true);
+  const [availabilityText, setAvailabilityText] = useState<'Available' | 'Busy' | 'Inactive'>('Available');
+  const [vehicleType, setVehicleType] = useState('Ambulance');
+  const [zone, setZone] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+
+  const loadAvailability = async () => {
+    if (!user?.id) return;
+    try {
+      const responder = await fetchResponderById(user.id);
+      setAvailabilityText(responder.availability);
+      setAvailable(responder.availability === 'Available');
+      setVehicleType(responder.vehicleType || 'Ambulance');
+      setZone(responder.zone || '');
+    } catch {
+      // keep local state
+    }
+  };
+
+  useEffect(() => {
+    loadAvailability();
+
+    // Lightweight sync so admin changes reflect while screen is open
+    const interval = setInterval(() => {
+      loadAvailability();
+    }, 10000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleLogout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     logout();
     router.dismissAll();
-    router.replace('/');
+    router.replace('/(responder-auth)/login');
   };
 
   return (
@@ -48,10 +77,11 @@ export default function ResponderProfileScreen() {
         </View>
         <Switch
           value={available}
-          onValueChange={(val) => {
-            setAvailable(val);
+          onValueChange={() => {
+            // Admin-controlled status: responder cannot change availability
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           }}
+          disabled
           trackColor={{ false: '#d1d5db', true: 'rgba(16,185,129,0.3)' }}
           thumbColor={available ? Colors.success : '#9ca3af'}
         />
@@ -65,13 +95,13 @@ export default function ResponderProfileScreen() {
         </View>
         <View style={styles.infoDivider} />
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Unit</Text>
-          <Text style={styles.infoValue}>Emergency Rescue</Text>
+          <Text style={styles.infoLabel}>Vehicle Type</Text>
+          <Text style={styles.infoValue}>{vehicleType}</Text>
         </View>
         <View style={styles.infoDivider} />
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Zone</Text>
-          <Text style={styles.infoValue}>South Karachi</Text>
+          <Text style={styles.infoValue}>{zone || '—'}</Text>
         </View>
         <View style={styles.infoDivider} />
         <View style={styles.infoRow}>

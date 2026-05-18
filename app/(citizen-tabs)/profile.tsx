@@ -15,7 +15,7 @@ export default function CitizenProfileScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     logout();
     router.dismissAll();
-    router.replace('/');
+    router.replace('/(citizen-auth)/login');
   };
 
   const menuItems = [
