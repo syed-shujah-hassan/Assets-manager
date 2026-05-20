@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/lib/auth-context';
-import { fetchRequests, EmergencyRequest, fetchResponderById, updateResponderAvailability, updateResponderLocation } from '@/lib/api';
+import { fetchRequests, EmergencyRequest, fetchResponderById, updateResponderAvailability, updateResponderLocation, formatRequestRef } from '@/lib/api';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 
@@ -103,7 +103,7 @@ export default function ResponderHomeScreen() {
       >
         <View style={styles.requestHeader}>
           <View style={styles.requestIdRow}>
-            <Text style={styles.requestId}>{item.id}</Text>
+            <Text style={styles.requestId}>{formatRequestRef(item)}</Text>
             <View style={[styles.badge, { backgroundColor: color.bg }]}>
               <Text style={[styles.badgeText, { color: color.text }]}>{item.status}</Text>
             </View>

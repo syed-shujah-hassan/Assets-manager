@@ -2,6 +2,12 @@ const express = require('express');
 
 const Request = require('../models/Request');
 const Responder = require('../models/Responder');
+const {
+  allocateReferenceCode,
+  displayReference,
+  normalizeIncomingReference,
+  isMongoObjectIdString,
+} = require('../utils/requestReference');
 
 const router = express.Router();
 
@@ -27,6 +33,7 @@ function requireAdmin(req, res, next) {
 function mapRequest(doc) {
   return {
     id: doc._id.toString(),
+    referenceCode: displayReference(doc),
     userId: doc.userId || 'U1',
     userName: doc.userName || 'Citizen',
     userPhone: doc.userPhone,
@@ -42,6 +49,15 @@ function mapRequest(doc) {
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };
+}
+
+async function findRequestDocument(param) {
+  const raw = String(param || '').trim();
+  if (!raw) return null;
+  if (isMongoObjectIdString(raw)) return Request.findById(raw);
+  const ref = normalizeIncomingReference(raw);
+  if (!ref) return null;
+  return Request.findOne({ referenceCode: ref });
 }
 
 // GET /api/requests
@@ -69,7 +85,10 @@ router.patch('/:id/assign', async (req, res) => {
       return res.status(404).json({ message: 'Responder not found' });
     }
 
-    const existing = await Request.findById(req.params.id);
+    const existing = await findRequestDocument(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
     if (
       existing?.responderId &&
       String(existing.responderId) !== String(responder._id)
@@ -78,7 +97,7 @@ router.patch('/:id/assign', async (req, res) => {
     }
 
     const doc = await Request.findByIdAndUpdate(
-      req.params.id,
+      existing._id,
       {
         responderId: responder._id.toString(),
         responderName: responder.name,
@@ -95,16 +114,10 @@ router.patch('/:id/assign', async (req, res) => {
   }
 });
 
-const mongoose = require('mongoose');
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
-
 // GET /api/requests/:id
 router.get('/:id', async (req, res) => {
   try {
-    if (!isValidId(req.params.id)) {
-      return res.status(404).json({ message: 'Invalid Request ID format' });
-    }
-    const doc = await Request.findById(req.params.id);
+    const doc = await findRequestDocument(req.params.id);
     if (!doc) return res.status(404).json({ message: 'Request not found' });
     return res.json(mapRequest(doc));
   } catch (err) {
@@ -117,9 +130,9 @@ router.get('/:id', async (req, res) => {
 // Body: { status }
 router.patch('/:id/status', async (req, res) => {
   try {
-    if (!isValidId(req.params.id)) {
-      return res.status(404).json({ message: 'Invalid Request ID format' });
-    }
+    const target = await findRequestDocument(req.params.id);
+    if (!target) return res.status(404).json({ message: 'Request not found' });
+
     const { status } = req.body;
     const allowed = new Set(['Pending', 'Assigned', 'En Route', 'Arrived', 'Resolved', 'Cancelled']);
     if (!allowed.has(status)) {
@@ -128,13 +141,12 @@ router.patch('/:id/status', async (req, res) => {
 
     // If resolving/cancelling, free the assigned responder (best-effort)
     if (status === 'Resolved' || status === 'Cancelled') {
-      const current = await Request.findById(req.params.id);
-      if (current?.responderId) {
-        await Responder.findByIdAndUpdate(current.responderId, { availability: 'Available' });
+      if (target.responderId) {
+        await Responder.findByIdAndUpdate(target.responderId, { availability: 'Available' });
       }
     }
 
-    const doc = await Request.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const doc = await Request.findByIdAndUpdate(target._id, { status }, { new: true });
     if (!doc) return res.status(404).json({ message: 'Request not found' });
 
     // Busy only after responder accepts (starts navigation)
@@ -158,6 +170,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Missing or invalid fields' });
     }
 
+    const referenceCode = await allocateReferenceCode(Request);
     const doc = await Request.create({
       description,
       location,
@@ -166,6 +179,7 @@ router.post('/', async (req, res) => {
       userId,
       userName,
       userPhone,
+      referenceCode,
     });
 
     res.status(201).json(mapRequest(doc));
@@ -185,8 +199,10 @@ router.patch('/:id/citizen-location', async (req, res) => {
     }
 
     const updatedAt = at ? new Date(at) : new Date();
+    const target = await findRequestDocument(req.params.id);
+    if (!target) return res.status(404).json({ message: 'Request not found' });
     const doc = await Request.findByIdAndUpdate(
-      req.params.id,
+      target._id,
       {
         citizenLiveCoordinates: { lat: coordinates.lat, lng: coordinates.lng },
         citizenLiveAccuracy: typeof accuracy === 'number' ? accuracy : undefined,
@@ -222,7 +238,9 @@ router.patch('/:id/responder-location', async (req, res) => {
       update.responderId = responderId;
     }
 
-    const doc = await Request.findByIdAndUpdate(req.params.id, update, { new: true });
+    const target = await findRequestDocument(req.params.id);
+    if (!target) return res.status(404).json({ message: 'Request not found' });
+    const doc = await Request.findByIdAndUpdate(target._id, update, { new: true });
     if (!doc) return res.status(404).json({ message: 'Request not found' });
     return res.json({ ok: true });
   } catch (err) {
@@ -235,11 +253,12 @@ router.patch('/:id/responder-location', async (req, res) => {
 // Returns incident coordinates + latest citizen/responder live coordinates
 router.get('/:id/locations', async (req, res) => {
   try {
-    const doc = await Request.findById(req.params.id);
+    const doc = await findRequestDocument(req.params.id);
     if (!doc) return res.status(404).json({ message: 'Request not found' });
 
     return res.json({
       requestId: doc._id.toString(),
+      referenceCode: displayReference(doc),
       incident: {
         location: doc.location,
         coordinates: doc.coordinates,

@@ -3,7 +3,16 @@ import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Colors from '@/constants/colors';
-import { fetchRequestById, updateRequestStatus, EmergencyRequest, fetchRequestLocations, updateResponderLiveLocation, RequestLocations, updateResponderLocation } from '@/lib/api';
+import {
+  fetchRequestById,
+  updateRequestStatus,
+  EmergencyRequest,
+  fetchRequestLocations,
+  updateResponderLiveLocation,
+  RequestLocations,
+  updateResponderLocation,
+  formatRequestRef,
+} from '@/lib/api';
 import { buildGoogleDirectionsUrl } from '@/lib/mapsDirections';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
@@ -201,7 +210,7 @@ export default function ResponderRequestDetailsScreen() {
         <View style={[styles.statusBadge, { backgroundColor: color.bg }]}>
           <Text style={[styles.statusText, { color: color.text }]}>{request.status}</Text>
         </View>
-        <Text style={styles.requestId}>{request.id}</Text>
+        <Text style={styles.requestId}>{formatRequestRef(request)}</Text>
       </View>
 
       <View style={styles.card}>

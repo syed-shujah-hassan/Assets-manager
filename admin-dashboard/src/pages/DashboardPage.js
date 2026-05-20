@@ -109,7 +109,7 @@ function DashboardPage() {
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
+                  <th>Ref</th>
                   <th>User</th>
                   <th>Time</th>
                   <th>Status</th>
@@ -118,8 +118,10 @@ function DashboardPage() {
               <tbody>
                 {recentRequests.map(r => (
                   <tr key={r.id}>
-                    <td style={{ fontWeight: 600, color: 'var(--navy)' }}>{r.id}</td>
-                    <td>{r.userName}</td>
+                    <td>
+                      <span className="request-ref">{r.referenceCode || r.id}</span>
+                    </td>
+                    <td>{r.user || r.userName}</td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{new Date(r.createdAt).toLocaleString()}</td>
                     <td>{statusBadge(r.status)}</td>
                   </tr>

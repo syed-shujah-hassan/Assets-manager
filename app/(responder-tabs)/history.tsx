@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
-import { fetchResponderHistory, EmergencyRequest } from '@/lib/api';
+import { fetchResponderHistory, EmergencyRequest, formatRequestRef } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
 function getStatusColor(status: string) {
@@ -57,7 +57,7 @@ export default function ResponderHistoryScreen() {
         onPress={() => router.push({ pathname: '/responder/request-details', params: { id: item.id } })}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardId}>{item.id}</Text>
+          <Text style={styles.cardId}>{formatRequestRef(item)}</Text>
           <View style={[styles.badge, { backgroundColor: color.bg }]}>
             <Text style={[styles.badgeText, { color: color.text }]}>{item.status}</Text>
           </View>

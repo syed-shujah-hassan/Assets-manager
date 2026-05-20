@@ -136,7 +136,11 @@ export default function ResponderTrackRequestScreen() {
         </Pressable>
         <View style={styles.headerTextWrap}>
           <Text style={styles.title}>Live Rescue Tracking</Text>
-          {params.id && <Text style={styles.subtitle}>Request {params.id}</Text>}
+          {params.id && (
+            <Text style={styles.subtitle}>
+              {locations?.referenceCode ? `Request ${locations.referenceCode}` : 'Request ···'}
+            </Text>
+          )}
         </View>
       </View>
 

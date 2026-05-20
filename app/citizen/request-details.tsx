@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/colors';
-import { fetchRequestById, EmergencyRequest } from '@/lib/api';
+import { fetchRequestById, EmergencyRequest, formatRequestRef } from '@/lib/api';
 
 const TIMELINE_STEPS = ['Pending', 'Assigned', 'En Route', 'Arrived', 'Resolved'];
 
@@ -59,7 +59,7 @@ export default function RequestDetailsScreen() {
         <View style={[styles.statusBadge, { backgroundColor: color.bg }]}>
           <Text style={[styles.statusText, { color: color.text }]}>{request.status}</Text>
         </View>
-        <Text style={styles.requestId}>{request.id}</Text>
+        <Text style={styles.requestId}>{formatRequestRef(request)}</Text>
         <Text style={styles.dateText}>{new Date(request.createdAt).toLocaleString()}</Text>
       </View>
 

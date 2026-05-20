@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/lib/auth-context';
-import { fetchRequests, EmergencyRequest } from '@/lib/api';
+import { fetchRequests, EmergencyRequest, formatRequestRef } from '@/lib/api';
 import * as Haptics from 'expo-haptics';
 
 function getStatusColor(status: string) {
@@ -165,7 +165,7 @@ export default function CitizenHomeScreen() {
                 onPress={() => router.push({ pathname: '/citizen/request-details', params: { id: req.id } })}
               >
                 <View style={styles.requestCardLeft}>
-                  <Text style={styles.requestId}>{req.id}</Text>
+                  <Text style={styles.requestId}>{formatRequestRef(req)}</Text>
                   <Text style={styles.requestDesc} numberOfLines={1}>{req.description}</Text>
                   <Text style={styles.requestDate}>{new Date(req.createdAt).toLocaleDateString()}</Text>
                 </View>

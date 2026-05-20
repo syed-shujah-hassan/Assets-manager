@@ -19,6 +19,7 @@ function hasCoords(coordinates) {
 function mapRequestFromApi(r) {
   return {
     id: r.id,
+    referenceCode: r.referenceCode,
     user: r.userName || r.user,
     phone: r.userPhone || r.phone,
     time: r.createdAt || r.time,
@@ -251,7 +252,7 @@ function RequestsPage() {
             <thead>
               <tr>
                 <th></th>
-                <th>ID</th>
+                <th>Ref</th>
                 <th>User</th>
                 <th>Time</th>
                 <th>Location</th>
@@ -274,7 +275,9 @@ function RequestsPage() {
                       <span className="badge badge-read">Viewed</span>
                     )}
                   </td>
-                  <td style={{ fontWeight: 600, color: 'var(--navy)' }}>{r.id}</td>
+                  <td>
+                    <span className="request-ref">{r.referenceCode || r.id}</span>
+                  </td>
                   <td>{r.user}</td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{r.time}</td>
                   <td
@@ -301,7 +304,9 @@ function RequestsPage() {
         <div className="modal-overlay" onClick={() => setSelected(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <span className="modal-title">Request {selected.id}</span>
+              <span className="modal-title">
+                Request <span className="request-ref">{selected.referenceCode || selected.id}</span>
+              </span>
               <button type="button" className="modal-close" onClick={() => setSelected(null)}>
                 ×
               </button>

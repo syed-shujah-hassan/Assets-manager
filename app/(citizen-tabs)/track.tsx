@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
-import { fetchRequests, EmergencyRequest } from '@/lib/api';
+import { fetchRequests, EmergencyRequest, formatRequestRef } from '@/lib/api';
 
 const STATUS_FILTERS = ['All', 'Pending', 'Assigned', 'En Route', 'Resolved', 'Cancelled'] as const;
 
@@ -53,7 +53,7 @@ export default function TrackRequestScreen() {
         onPress={() => router.push({ pathname: '/citizen/request-details', params: { id: item.id } })}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardId}>{item.id}</Text>
+          <Text style={styles.cardId}>{formatRequestRef(item)}</Text>
           <View style={[styles.badge, { backgroundColor: color.bg }]}>
             <Text style={[styles.badgeText, { color: color.text }]}>{item.status}</Text>
           </View>

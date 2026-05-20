@@ -2,11 +2,13 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 
 const Responder = require('../models/Responder');
+const Request = require('../models/Request');
 const requireAdmin = require('../middleware/requireAdmin');
 
 const router = express.Router();
 
-function mapResponder(r) {
+/** When `resolvedCount` is passed, it is the live count from the requests collection (source of truth). */
+function mapResponder(r, resolvedCount) {
   return {
     id: r._id.toString(),
     name: r.name,
@@ -18,10 +20,17 @@ function mapResponder(r) {
     lastKnownCoordinates: r.lastKnownCoordinates?.lat != null && r.lastKnownCoordinates?.lng != null ? r.lastKnownCoordinates : null,
     lastKnownAccuracy: typeof r.lastKnownAccuracy === 'number' ? r.lastKnownAccuracy : null,
     lastKnownUpdatedAt: r.lastKnownUpdatedAt ? r.lastKnownUpdatedAt.toISOString() : null,
-    totalResolved: r.totalResolved ?? 0,
+    totalResolved: typeof resolvedCount === 'number' ? resolvedCount : (r.totalResolved ?? 0),
     isActive: r.isActive !== false,
     joinDate: r.joinDate || (r.createdAt ? r.createdAt.toISOString().split('T')[0] : ''),
   };
+}
+
+async function countResolvedForResponder(responderId) {
+  return Request.countDocuments({
+    responderId: String(responderId),
+    status: 'Resolved',
+  });
 }
 
 function toRad(d) {
@@ -42,7 +51,18 @@ function haversineKm(a, b) {
 router.get('/', async (req, res) => {
   try {
     const responders = await Responder.find().sort({ createdAt: -1 });
-    const mapped = responders.map(mapResponder);
+    const ids = responders.map((r) => String(r._id));
+    const countByResponderId = {};
+    if (ids.length > 0) {
+      const aggregated = await Request.aggregate([
+        { $match: { status: 'Resolved', responderId: { $in: ids } } },
+        { $group: { _id: '$responderId', total: { $sum: 1 } } },
+      ]);
+      for (const row of aggregated) {
+        countByResponderId[String(row._id)] = row.total;
+      }
+    }
+    const mapped = responders.map((r) => mapResponder(r, countByResponderId[String(r._id)] ?? 0));
     res.json(mapped);
   } catch (err) {
     console.error('Fetch responders error:', err.message);
@@ -119,7 +139,8 @@ router.get('/:id', async (req, res) => {
     if (!responder) {
       return res.status(404).json({ message: 'Responder not found' });
     }
-    res.json(mapResponder(responder));
+    const totalResolved = await countResolvedForResponder(responder._id);
+    res.json(mapResponder(responder, totalResolved));
   } catch (err) {
     console.error('Fetch responder error:', err.message);
     res.status(500).json({ message: 'Failed to fetch responder' });
@@ -150,7 +171,8 @@ router.patch('/:id/location', async (req, res) => {
       return res.status(404).json({ message: 'Responder not found' });
     }
 
-    return res.json(mapResponder(responder));
+    const totalResolved = await countResolvedForResponder(responder._id);
+    return res.json(mapResponder(responder, totalResolved));
   } catch (err) {
     console.error('Update responder location error:', err.message);
     return res.status(500).json({ message: 'Failed to update responder location' });
@@ -177,7 +199,8 @@ router.patch('/:id/availability', requireAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Responder not found' });
     }
 
-    res.json(mapResponder(responder));
+    const totalResolved = await countResolvedForResponder(responder._id);
+    res.json(mapResponder(responder, totalResolved));
   } catch (err) {
     console.error('Update responder availability error:', err.message);
     res.status(500).json({ message: 'Failed to update responder availability' });
@@ -220,7 +243,7 @@ router.post('/', async (req, res) => {
       joinDate: new Date().toISOString().split('T')[0],
     });
 
-    res.status(201).json(mapResponder(responder));
+    res.status(201).json(mapResponder(responder, 0));
   } catch (err) {
     console.error('Create responder error:', err.message);
     res.status(500).json({ message: 'Failed to create responder' });
@@ -254,7 +277,8 @@ router.patch('/:id', requireAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Responder not found' });
     }
 
-    res.json(mapResponder(responder));
+    const totalResolved = await countResolvedForResponder(responder._id);
+    res.json(mapResponder(responder, totalResolved));
   } catch (err) {
     console.error('Update responder error:', err.message);
     res.status(500).json({ message: 'Failed to update responder' });

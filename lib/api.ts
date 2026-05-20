@@ -26,6 +26,8 @@ export interface Responder {
 
 export interface EmergencyRequest {
   id: string;
+  /** Short display code from API e.g. ER-Q7-KM9 (Mongo id stays in `id`). */
+  referenceCode?: string;
   userId: string;
   userName: string;
   userPhone?: string;
@@ -42,8 +44,15 @@ export interface EmergencyRequest {
   distance?: string;
 }
 
+/** Compact request reference for headings and lists (falls back to system id). */
+export function formatRequestRef(r: Pick<EmergencyRequest, 'id' | 'referenceCode'>): string {
+  const code = r.referenceCode?.trim();
+  return code || r.id;
+}
+
 export interface RequestLocations {
   requestId: string;
+  referenceCode?: string;
   incident: {
     location: string;
     coordinates: { lat: number; lng: number };
@@ -92,6 +101,7 @@ const CLOUDINARY_UPLOAD_PRESET = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESE
 const dummyRequests: EmergencyRequest[] = [
   {
     id: 'REQ-001',
+    referenceCode: 'ER-DM-001',
     userId: 'U1',
     userName: 'Ahmed Khan',
     userPhone: '+92 300 1234567',
@@ -108,6 +118,7 @@ const dummyRequests: EmergencyRequest[] = [
   },
   {
     id: 'REQ-002',
+    referenceCode: 'ER-DM-002',
     userId: 'U2',
     userName: 'Sara Ali',
     userPhone: '+92 311 9876543',
@@ -121,6 +132,7 @@ const dummyRequests: EmergencyRequest[] = [
   },
   {
     id: 'REQ-003',
+    referenceCode: 'ER-DM-003',
     userId: 'U1',
     userName: 'Ahmed Khan',
     userPhone: '+92 300 1234567',
@@ -137,6 +149,7 @@ const dummyRequests: EmergencyRequest[] = [
   },
   {
     id: 'REQ-004',
+    referenceCode: 'ER-DM-004',
     userId: 'U3',
     userName: 'Hassan Raza',
     userPhone: '+92 322 5551234',
@@ -153,6 +166,7 @@ const dummyRequests: EmergencyRequest[] = [
   },
   {
     id: 'REQ-005',
+    referenceCode: 'ER-DM-005',
     userId: 'U4',
     userName: 'Fatima Noor',
     userPhone: '+92 333 7778899',
@@ -463,6 +477,7 @@ throw new Error(apiData?.message || 'Failed to submit request');
 // Map backend response to EmergencyRequest type
 const mapped: EmergencyRequest = {
   id: apiData.id,
+  referenceCode: apiData.referenceCode,
   userId: apiData.userId || 'U1',
   userName: apiData.userName || 'Citizen',
   userPhone: apiData.userPhone,
