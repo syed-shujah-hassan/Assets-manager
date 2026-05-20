@@ -7,7 +7,6 @@ import { fetchRequestById, updateRequestStatus, EmergencyRequest, fetchRequestLo
 import { buildGoogleDirectionsUrl } from '@/lib/mapsDirections';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import * as Location from 'expo-location';
 
 function getStatusColor(status: string) {
   switch (status) {
