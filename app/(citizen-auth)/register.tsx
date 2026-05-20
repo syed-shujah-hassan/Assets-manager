@@ -26,8 +26,8 @@ export default function CitizenRegisterScreen() {
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const user = await registerUser(name, email, password, phone, cnic);
-      login(user);
+      const session = await registerUser(name, email, password, phone, cnic);
+      login(session.user, session.token);
       router.dismissAll();
       router.replace('/(citizen-tabs)');
     } catch (e: any) {

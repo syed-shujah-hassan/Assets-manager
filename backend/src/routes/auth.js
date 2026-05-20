@@ -7,6 +7,18 @@ const Responder = require('../models/Responder');
 const Admin = require('../models/Admin');
 
 const router = express.Router();
+const requireAuth = require('../middleware/requireAuth');
+
+function mapUser(doc, role) {
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    email: doc.email,
+    phone: doc.phone,
+    cnic: doc.cnic,
+    role,
+  };
+}
 
 function getModelByRole(role) {
   if (role === 'responder') return Responder;
@@ -149,6 +161,94 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error('Login error:', err.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/auth/me
+router.get('/me', requireAuth(['citizen', 'responder']), async (req, res) => {
+  try {
+    const Model = getModelByRole(req.user.role);
+    const doc = await Model.findById(req.user.id);
+    if (!doc) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ user: mapUser(doc, req.user.role) });
+  } catch (err) {
+    console.error('Auth me error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PATCH /api/auth/profile
+router.patch('/profile', requireAuth(['citizen', 'responder']), async (req, res) => {
+  try {
+    const { name, phone, email } = req.body;
+    const Model = getModelByRole(req.user.role);
+    const doc = await Model.findById(req.user.id);
+    if (!doc) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (name !== undefined) {
+      const trimmed = String(name).trim();
+      if (!trimmed) return res.status(400).json({ message: 'Name is required' });
+      doc.name = trimmed;
+    }
+    if (phone !== undefined) {
+      const trimmed = String(phone).trim();
+      if (!trimmed) return res.status(400).json({ message: 'Phone is required' });
+      doc.phone = trimmed;
+    }
+    if (email !== undefined) {
+      const trimmed = String(email).trim().toLowerCase();
+      if (!trimmed) return res.status(400).json({ message: 'Email is required' });
+      const existing =
+        (await Citizen.findOne({ email: trimmed, _id: { $ne: doc._id } })) ||
+        (await Responder.findOne({ email: trimmed, _id: { $ne: doc._id } })) ||
+        (await Admin.findOne({ email: trimmed }));
+      if (existing) {
+        return res.status(409).json({ message: 'Email already in use' });
+      }
+      doc.email = trimmed;
+    }
+
+    await doc.save();
+    res.json({ user: mapUser(doc, req.user.role) });
+  } catch (err) {
+    console.error('Update profile error:', err.message);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+// PATCH /api/auth/password
+router.patch('/password', requireAuth(['citizen', 'responder']), async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required' });
+    }
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+
+    const Model = getModelByRole(req.user.role);
+    const doc = await Model.findById(req.user.id);
+    if (!doc) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, doc.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    doc.passwordHash = await bcrypt.hash(newPassword, salt);
+    await doc.save();
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Change password error:', err.message);
+    res.status(500).json({ message: 'Failed to change password' });
   }
 });
 

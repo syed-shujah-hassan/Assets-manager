@@ -4,9 +4,11 @@ import type { User } from './api';
 
 interface AuthContextValue {
   user: User | null;
+  token: string | null;
   isLoggedIn: boolean;
   isReady: boolean;
-  login: (user: User) => void;
+  login: (user: User, token?: string | null) => void;
+  updateUser: (user: User) => void;
   logout: () => void;
 }
 
@@ -14,8 +16,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const STORAGE_KEY = 'rms_auth_user_v1';
 
+type StoredAuth = {
+  user: User;
+  token?: string | null;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -25,7 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (!mounted) return;
         if (raw) {
-          setUser(JSON.parse(raw));
+          const parsed = JSON.parse(raw) as StoredAuth | User;
+          if (parsed && typeof parsed === 'object' && 'user' in parsed) {
+            setUser(parsed.user);
+            setToken(parsed.token || null);
+          } else {
+            setUser(parsed as User);
+          }
         }
       } catch {
         // ignore
@@ -38,25 +52,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = useMemo(() => ({
-    user,
-    isLoggedIn: !!user,
-    isReady,
-    login: (u: User) => {
-      setUser(u);
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(u)).catch(() => {});
-    },
-    logout: () => {
-      setUser(null);
+  const persist = (u: User | null, t: string | null) => {
+    if (!u) {
       AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
-    },
-  }), [user, isReady]);
+      return;
+    }
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ user: u, token: t })).catch(() => {});
+  };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isLoggedIn: !!user,
+      isReady,
+      login: (u: User, t?: string | null) => {
+        setUser(u);
+        setToken(t || null);
+        persist(u, t || null);
+      },
+      updateUser: (u: User) => {
+        setUser(u);
+        persist(u, token);
+      },
+      logout: () => {
+        setUser(null);
+        setToken(null);
+        persist(null, null);
+      },
+    }),
+    [user, token, isReady],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

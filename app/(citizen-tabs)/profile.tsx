@@ -19,11 +19,11 @@ export default function CitizenProfileScreen() {
   };
 
   const menuItems = [
-    { icon: 'person-outline' as const, label: 'Edit Profile', onPress: () => {} },
-    { icon: 'notifications-outline' as const, label: 'Notifications', onPress: () => {} },
-    { icon: 'shield-checkmark-outline' as const, label: 'Privacy & Security', onPress: () => {} },
-    { icon: 'help-circle-outline' as const, label: 'Help & Support', onPress: () => {} },
-    { icon: 'information-circle-outline' as const, label: 'About', onPress: () => {} },
+    { icon: 'person-outline' as const, label: 'Edit Profile', href: '/citizen/edit-profile' as const },
+    { icon: 'notifications-outline' as const, label: 'Notifications', href: '/citizen/notifications' as const },
+    { icon: 'shield-checkmark-outline' as const, label: 'Privacy & Security', href: '/citizen/privacy-security' as const },
+    { icon: 'help-circle-outline' as const, label: 'Help & Support', href: '/citizen/help-support' as const },
+    { icon: 'information-circle-outline' as const, label: 'About', href: '/citizen/about' as const },
   ];
 
   return (
@@ -67,7 +67,7 @@ export default function CitizenProfileScreen() {
           <View key={item.label}>
             <Pressable
               style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
-              onPress={item.onPress}
+              onPress={() => router.push(item.href)}
             >
               <Ionicons name={item.icon} size={22} color={Colors.textSecondary} />
               <Text style={styles.menuLabel}>{item.label}</Text>

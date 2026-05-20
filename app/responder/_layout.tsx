@@ -13,6 +13,11 @@ export default function ResponderDetailLayout() {
       }}
     >
       <Stack.Screen name="request-details" options={{ title: 'Request Details' }} />
+      <Stack.Screen name="edit-profile" options={{ title: 'Edit Profile' }} />
+      <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+      <Stack.Screen name="privacy-security" options={{ title: 'Privacy & Security' }} />
+      <Stack.Screen name="help-support" options={{ title: 'Help & Support' }} />
+      <Stack.Screen name="about" options={{ title: 'About' }} />
     </Stack>
   );
 }

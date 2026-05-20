@@ -8,7 +8,7 @@ export interface User {
 }
 
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export type ResponderAvailability = 'Available' | 'Busy' | 'Inactive';
 
@@ -166,7 +166,26 @@ const dummyRequests: EmergencyRequest[] = [
   },
 ];
 
-export async function loginUser(identifier: string, password: string, role: 'citizen' | 'responder' | 'admin'): Promise<User> {
+export type AuthSession = { user: User; token: string };
+
+async function authHeaders(token: string | null | undefined): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+function mapApiUser(apiUser: any, role: User['role']): User {
+  return {
+    id: apiUser.id || apiUser._id,
+    name: apiUser.name,
+    email: apiUser.email,
+    phone: apiUser.phone,
+    cnic: apiUser.cnic,
+    role: apiUser.role || role,
+  };
+}
+
+export async function loginUser(identifier: string, password: string, role: 'citizen' | 'responder' | 'admin'): Promise<AuthSession> {
   if (!identifier || !password) throw new Error('Identifier and password are required');
 
   const body: any = { password };
@@ -203,16 +222,53 @@ export async function loginUser(identifier: string, password: string, role: 'cit
     throw new Error('Invalid response from server');
   }
 
-  const mapped: User = {
-    id: apiUser.id || apiUser._id,
-    name: apiUser.name,
-    email: apiUser.email,
-    phone: apiUser.phone,
-    cnic: apiUser.cnic,
-    role: apiUser.role || role,
-  };
+  if (!data.token) {
+    throw new Error('Invalid response from server');
+  }
 
-  return mapped;
+  return { user: mapApiUser(apiUser, role), token: data.token };
+}
+
+export async function updateUserProfile(
+  token: string,
+  data: { name?: string; phone?: string; email?: string },
+): Promise<User> {
+  const res = await fetch(`${BACKEND_URL}/api/auth/profile`, {
+    method: 'PATCH',
+    headers: await authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  let body: any;
+  try {
+    body = await res.json();
+  } catch {
+    // ignore
+  }
+  if (!res.ok) {
+    throw new Error(body?.message || 'Failed to update profile');
+  }
+  return body.user as User;
+}
+
+export async function changeUserPassword(
+  token: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/api/auth/password`, {
+    method: 'PATCH',
+    headers: await authHeaders(token),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  let body: any;
+  try {
+    body = await res.json();
+  } catch {
+    // ignore
+  }
+  if (!res.ok) {
+    throw new Error(body?.message || 'Failed to change password');
+  }
 }
 
 export async function fetchResponderById(responderId: string): Promise<Responder> {
@@ -283,7 +339,7 @@ export async function updateResponderAvailability(responderId: string, availabil
   return data as Responder;
 }
 
-export async function registerUser(name: string, email: string, password: string, phone: string, cnic: string): Promise<User> {
+export async function registerUser(name: string, email: string, password: string, phone: string, cnic: string): Promise<AuthSession> {
   if (!name || !email || !password || !phone || !cnic) throw new Error('All fields are required');
 
   const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
@@ -310,16 +366,11 @@ export async function registerUser(name: string, email: string, password: string
     throw new Error('Invalid response from server');
   }
 
-  const mapped: User = {
-    id: apiUser.id || apiUser._id,
-    name: apiUser.name,
-    email: apiUser.email,
-    phone: apiUser.phone,
-    cnic: apiUser.cnic,
-    role: apiUser.role || 'citizen',
-  };
+  if (!data.token) {
+    throw new Error('Invalid response from server');
+  }
 
-return mapped;
+  return { user: mapApiUser(apiUser, 'citizen'), token: data.token };
 }
 
 export async function submitEmergencyRequest(data: {
@@ -361,7 +412,7 @@ if (Platform.OS === 'web') {
   // "cannot assign to property name which only has a getter". Use base64 data URI instead.
   const mime = guessMime(data.photoUri);
   const base64 = await FileSystem.readAsStringAsync(data.photoUri, {
-    encoding: 'base64',
+    encoding: FileSystem.EncodingType.Base64,
   });
   formData.append('file', `data:${mime};base64,${base64}` as any);
 }

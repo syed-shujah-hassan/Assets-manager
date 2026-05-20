@@ -112,17 +112,22 @@ export default function ResponderProfileScreen() {
 
       <View style={styles.menuCard}>
         {[
-          { icon: 'settings-outline' as const, label: 'Settings' },
-          { icon: 'help-circle-outline' as const, label: 'Help & Support' },
-          { icon: 'information-circle-outline' as const, label: 'About' },
+          { icon: 'person-outline' as const, label: 'Edit Profile', href: '/responder/edit-profile' as const },
+          { icon: 'notifications-outline' as const, label: 'Notifications', href: '/responder/notifications' as const },
+          { icon: 'shield-checkmark-outline' as const, label: 'Privacy & Security', href: '/responder/privacy-security' as const },
+          { icon: 'help-circle-outline' as const, label: 'Help & Support', href: '/responder/help-support' as const },
+          { icon: 'information-circle-outline' as const, label: 'About', href: '/responder/about' as const },
         ].map((item, index) => (
           <View key={item.label}>
-            <Pressable style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}>
+            <Pressable
+              style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+              onPress={() => router.push(item.href)}
+            >
               <Ionicons name={item.icon} size={22} color={Colors.textSecondary} />
               <Text style={styles.menuLabel}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
             </Pressable>
-            {index < 2 && <View style={styles.menuDivider} />}
+            {index < 4 && <View style={styles.menuDivider} />}
           </View>
         ))}
       </View>

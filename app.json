@@ -15,13 +15,16 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.myapp"
+      "bundleIdentifier": "com.myapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.anonymous.AssetManager",
       "config": {
         "googleMaps": {
-          "apiKey": "${EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY}"
+          "apiKey": ""
         }
       },
       "permissions": [
@@ -54,6 +57,15 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
+      "eas": {
+        "projectId": "561b42e6-bdca-402c-9d66-4bf47270443f"
+      }
+    },
+    "owner": "syed_shujah"
   }
 }

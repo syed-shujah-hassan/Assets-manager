@@ -34,8 +34,8 @@ export default function CitizenLoginScreen() {
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const user = await loginUser(cnic, password, 'citizen');
-      login(user);
+      const session = await loginUser(cnic, password, 'citizen');
+      login(session.user, session.token);
       router.dismissAll();
       router.replace('/(citizen-tabs)');
     } catch (e: any) {

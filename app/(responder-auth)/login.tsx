@@ -34,8 +34,8 @@ export default function ResponderLoginScreen() {
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const user = await loginUser(email, password, 'responder');
-      login(user);
+      const session = await loginUser(email, password, 'responder');
+      login(session.user, session.token);
       router.dismissAll();
       router.replace('/(responder-tabs)');
     } catch (e: any) {
