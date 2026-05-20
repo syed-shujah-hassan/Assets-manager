@@ -39,6 +39,10 @@ export interface EmergencyRequest {
   responderId?: string;
   responderName?: string;
   responderPhone?: string;
+  priority?: 'Critical' | 'High' | 'Medium' | 'Low';
+  incidentType?: 'fire' | 'accident' | 'medical' | 'general';
+  recommendedVehicle?: string;
+  aiSource?: 'gemini' | 'rules';
   createdAt: string;
   updatedAt: string;
   distance?: string;
@@ -78,6 +82,14 @@ export interface Feedback {
   rating: number;
   comment: string;
   createdAt: string;
+}
+
+export interface EmergencyAnalysis {
+  cleanedDescription: string;
+  priority: 'Critical' | 'High' | 'Medium' | 'Low';
+  incidentType: 'fire' | 'accident' | 'medical' | 'general';
+  recommendedVehicle: string;
+  source: 'gemini' | 'rules';
 }
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -395,6 +407,7 @@ photoUri?: string;
 userId?: string;
 userName?: string;
 userPhone?: string;
+priority?: 'Critical' | 'High' | 'Medium' | 'Low';
 }): Promise<EmergencyRequest> {
 let photoUrl: string | undefined;
 
@@ -460,6 +473,7 @@ photoUrl,
 userId: data.userId,
 userName: data.userName,
 userPhone: data.userPhone,
+priority: data.priority,
 }),
 });
 
@@ -486,10 +500,35 @@ const mapped: EmergencyRequest = {
   coordinates: apiData.coordinates,
   photoUri: apiData.photoUrl || apiData.photoUri,
   status: apiData.status,
+  priority: apiData.priority,
+  incidentType: apiData.incidentType,
+  recommendedVehicle: apiData.recommendedVehicle,
+  aiSource: apiData.aiSource,
   createdAt: apiData.createdAt,
   updatedAt: apiData.updatedAt,
 };
 return mapped;
+}
+
+export async function analyzeEmergencyDraft(data: {
+  description: string;
+  location?: string;
+}): Promise<EmergencyAnalysis> {
+  const res = await fetch(`${BACKEND_URL}/api/requests/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  let body: any;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+  if (!res.ok) {
+    throw new Error(body?.message || 'Failed to analyze emergency text');
+  }
+  return body as EmergencyAnalysis;
 }
 
 export async function fetchRequests(role: 'citizen' | 'responder', userId?: string): Promise<EmergencyRequest[]> {

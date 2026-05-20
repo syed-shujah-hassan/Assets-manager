@@ -26,6 +26,18 @@ const requestSchema = new mongoose.Schema(
     photoUrl: { type: String },
     /** Short public code shown in UIs (e.g. ER-Q7-KM9). Mongo `_id` remains the API/route id. */
     referenceCode: { type: String, unique: true, sparse: true, trim: true },
+    priority: {
+      type: String,
+      enum: ['Critical', 'High', 'Medium', 'Low'],
+      default: 'High',
+    },
+    incidentType: {
+      type: String,
+      enum: ['fire', 'accident', 'medical', 'general'],
+      default: 'general',
+    },
+    recommendedVehicle: { type: String, default: 'Ambulance' },
+    aiSource: { type: String, enum: ['gemini', 'rules'], default: 'rules' },
     status: {
       type: String,
       enum: ['Pending', 'Assigned', 'En Route', 'Arrived', 'Resolved', 'Cancelled'],

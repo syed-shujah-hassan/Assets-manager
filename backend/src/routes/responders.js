@@ -47,6 +47,33 @@ function haversineKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 
+function inferIncidentType(description = '') {
+  const text = String(description).toLowerCase();
+  if (['fire', 'smoke', 'burn', 'blast', 'explosion'].some((w) => text.includes(w))) return 'fire';
+  if (['accident', 'crash', 'collision', 'road', 'traffic'].some((w) => text.includes(w))) return 'accident';
+  if (['unconscious', 'heart', 'breathing', 'medical', 'bleeding', 'seizure'].some((w) => text.includes(w))) return 'medical';
+  return 'general';
+}
+
+function getOnlineState(lastKnownUpdatedAt) {
+  if (!lastKnownUpdatedAt) return { onlineState: 'Offline', staleSeconds: null };
+  const staleSeconds = Math.max(0, Math.floor((Date.now() - new Date(lastKnownUpdatedAt).getTime()) / 1000));
+  if (staleSeconds <= 30) return { onlineState: 'Online', staleSeconds };
+  if (staleSeconds <= 120) return { onlineState: 'Idle', staleSeconds };
+  return { onlineState: 'Offline', staleSeconds };
+}
+
+function getVehicleFit(vehicleType, incidentType, recommendedVehicle) {
+  const v = String(vehicleType || '').toLowerCase();
+  const rec = String(recommendedVehicle || '').toLowerCase();
+  if (rec && v.includes(rec.split(' ')[0])) return 4;
+  if (incidentType === 'medical' && v.includes('ambulance')) return 3;
+  if (incidentType === 'accident' && (v.includes('ambulance') || v.includes('rescue'))) return 3;
+  if (incidentType === 'fire' && v.includes('fire')) return 3;
+  if (v.includes('ambulance')) return 2;
+  return 1;
+}
+
 // GET /api/responders
 router.get('/', async (req, res) => {
   try {
@@ -78,6 +105,8 @@ router.get('/nearby', async (req, res) => {
     const limit = req.query.limit ? Number(req.query.limit) : 10;
     const maxDistanceKm = req.query.maxDistanceKm ? Number(req.query.maxDistanceKm) : null;
     const availability = req.query.availability ? String(req.query.availability) : null;
+    const incidentType = req.query.incidentType ? String(req.query.incidentType) : inferIncidentType(req.query.description || '');
+    const recommendedVehicle = req.query.recommendedVehicle ? String(req.query.recommendedVehicle) : '';
 
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return res.status(400).json({ message: 'Missing or invalid lat/lng' });
@@ -93,6 +122,7 @@ router.get('/nearby', async (req, res) => {
 
     let nearby = responders.map(r => {
       let distance = null;
+      const onlineMeta = getOnlineState(r.lastKnownUpdatedAt);
       // Only calculate distance if both points exist
       if (r.lastKnownCoordinates?.lat && r.lastKnownCoordinates?.lng && lat && lng) {
         try {
@@ -106,14 +136,24 @@ router.get('/nearby', async (req, res) => {
         name: r.name,
         email: r.email,
         phone: r.phone,
+        vehicleType: r.vehicleType || 'Ambulance',
         availability: r.availability,
+        lastKnownUpdatedAt: r.lastKnownUpdatedAt ? new Date(r.lastKnownUpdatedAt).toISOString() : null,
+        onlineState: onlineMeta.onlineState,
+        staleSeconds: onlineMeta.staleSeconds,
+        vehicleFitScore: getVehicleFit(r.vehicleType, incidentType, recommendedVehicle),
         lastKnownCoordinates: r.lastKnownCoordinates,
         distance: distance !== null ? Math.round(distance * 10) / 10 : null
       };
     });
 
-    // Sort: Nearest first, those without location at the bottom
+    // Sort: Online first, then closest, then vehicle-fit score
     nearby.sort((a, b) => {
+      const onlineRank = { Online: 0, Idle: 1, Offline: 2 };
+      const aOnline = onlineRank[a.onlineState] ?? 3;
+      const bOnline = onlineRank[b.onlineState] ?? 3;
+      if (aOnline !== bOnline) return aOnline - bOnline;
+      if (a.vehicleFitScore !== b.vehicleFitScore) return b.vehicleFitScore - a.vehicleFitScore;
       if (a.distance === null && b.distance === null) return 0;
       if (a.distance === null) return 1;
       if (b.distance === null) return -1;

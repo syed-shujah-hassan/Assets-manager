@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Keyboa
 import { router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Colors from '@/constants/colors';
-import { submitEmergencyRequest } from '@/lib/api';
+import { submitEmergencyRequest, analyzeEmergencyDraft } from '@/lib/api';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -21,6 +21,28 @@ export default function SubmitEmergencyScreen() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const normalizeVoiceDescription = (raw: string) => {
+    const text = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!text) return '';
+    const firstUpper = text.charAt(0).toUpperCase() + text.slice(1);
+    return /[.!?]$/.test(firstUpper) ? firstUpper : `${firstUpper}.`;
+  };
+
+  const detectPriority = (text: string): 'Critical' | 'High' | 'Medium' | 'Low' => {
+    const value = String(text || '').toLowerCase();
+    const hasAny = (words: string[]) => words.some((w) => value.includes(w));
+    if (hasAny(['fire', 'explosion', 'blast', 'unconscious', 'not breathing', 'severe bleeding', 'trapped', 'collapse'])) {
+      return 'Critical';
+    }
+    if (hasAny(['accident', 'injury', 'injured', 'burn', 'gas leak', 'smoke', 'seizure'])) {
+      return 'High';
+    }
+    if (hasAny(['pain', 'dizzy', 'minor', 'help'])) {
+      return 'Medium';
+    }
+    return 'Low';
+  };
 
   // Pulse animation for mic
   useEffect(() => {
@@ -67,8 +89,12 @@ export default function SubmitEmergencyScreen() {
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           const transcriptText = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            setDescription(prev => prev ? `${prev} ${transcriptText}` : transcriptText);
-            setTranscript(transcriptText);
+            const cleaned = normalizeVoiceDescription(transcriptText);
+            setDescription(prev => {
+              const merged = prev ? `${prev} ${cleaned}` : cleaned;
+              return normalizeVoiceDescription(merged);
+            });
+            setTranscript(cleaned);
           } else {
             interimTranscript += transcriptText;
             setTranscript(interimTranscript);
@@ -191,7 +217,8 @@ export default function SubmitEmergencyScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!description.trim()) {
+    const cleanedDescription = normalizeVoiceDescription(description);
+    if (!cleanedDescription.trim()) {
       Alert.alert('Required', 'Please describe the emergency');
       return;
     }
@@ -211,14 +238,28 @@ export default function SubmitEmergencyScreen() {
         );
       }
 
+      let aiDescription = cleanedDescription;
+      let aiPriority = detectPriority(cleanedDescription);
+      try {
+        const analyzed = await analyzeEmergencyDraft({
+          description: cleanedDescription,
+          location: label,
+        });
+        aiDescription = analyzed.cleanedDescription || cleanedDescription;
+        aiPriority = analyzed.priority || aiPriority;
+      } catch {
+        // fallback to local rule-priority when backend AI endpoint unavailable
+      }
+
       await submitEmergencyRequest({
-        description,
+        description: aiDescription,
         location: label,
         coordinates: { lat, lng },
         photoUri: photoUri || undefined,
         userId: user?.id,
         userName: user?.name,
         userPhone: user?.phone,
+        priority: aiPriority,
       });
 
       Alert.alert('Submitted', 'Your emergency request has been submitted. Help is on the way.');

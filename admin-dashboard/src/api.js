@@ -106,7 +106,11 @@ export async function fetchResponderById(id) {
   return body;
 }
 
-export async function fetchNearbyResponders(lat, lng, { limit = 8, availability = 'Available', maxDistanceKm } = {}) {
+export async function fetchNearbyResponders(
+  lat,
+  lng,
+  { limit = 8, availability = 'Available', maxDistanceKm, description = '', incidentType = '', recommendedVehicle = '' } = {}
+) {
   const qs = new URLSearchParams({
     lat: String(lat),
     lng: String(lng),
@@ -116,6 +120,15 @@ export async function fetchNearbyResponders(lat, lng, { limit = 8, availability 
 
   if (typeof maxDistanceKm === 'number') {
     qs.set('maxDistanceKm', String(maxDistanceKm));
+  }
+  if (description) {
+    qs.set('description', description);
+  }
+  if (incidentType) {
+    qs.set('incidentType', incidentType);
+  }
+  if (recommendedVehicle) {
+    qs.set('recommendedVehicle', recommendedVehicle);
   }
 
   const res = await fetch(`${BACKEND_URL}/api/responders/nearby?${qs.toString()}`);

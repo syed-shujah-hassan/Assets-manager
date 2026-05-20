@@ -28,10 +28,36 @@ function mapRequestFromApi(r) {
     status: r.status,
     description: r.description,
     priority: r.priority || 'High',
+    incidentType: r.incidentType || 'general',
+    recommendedVehicle: r.recommendedVehicle || '',
+    aiSource: r.aiSource || 'rules',
     photoUrl: r.photoUri || r.photoUrl,
     coordinates: r.coordinates,
     responderId: r.responderId,
   };
+}
+
+function inferIncidentType(description = '') {
+  const text = String(description).toLowerCase();
+  if (['fire', 'smoke', 'burn', 'blast', 'explosion'].some((w) => text.includes(w))) return 'fire';
+  if (['accident', 'crash', 'collision', 'road', 'traffic'].some((w) => text.includes(w))) return 'accident';
+  if (['unconscious', 'heart', 'breathing', 'medical', 'bleeding', 'seizure'].some((w) => text.includes(w))) return 'medical';
+  return 'general';
+}
+
+function recommendedVehicle(incidentType) {
+  if (incidentType === 'fire') return 'Fire Unit';
+  if (incidentType === 'medical' || incidentType === 'accident') return 'Ambulance';
+  return 'Ambulance';
+}
+
+function formatStale(staleSeconds) {
+  if (staleSeconds == null) return 'No live GPS yet';
+  if (staleSeconds < 60) return `${staleSeconds}s ago`;
+  const mins = Math.floor(staleSeconds / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ago`;
 }
 
 function RequestsPage() {
@@ -130,6 +156,9 @@ function RequestsPage() {
     );
   };
 
+  const selectedIncidentType = selected?.incidentType || inferIncidentType(selected?.description || '');
+  const selectedRecommendedVehicle = selected?.recommendedVehicle || recommendedVehicle(selectedIncidentType);
+
   const loadNearby = async () => {
     if (selected?.coordinates?.lat == null || selected?.coordinates?.lng == null) {
       setNearbyError('Request location coordinates are missing.');
@@ -145,6 +174,9 @@ function RequestsPage() {
       const data = await fetchNearbyResponders(lat, lng, {
         maxDistanceKm: 50,
         availability: 'Available',
+        description: selected.description || '',
+        incidentType: selectedIncidentType,
+        recommendedVehicle: selectedRecommendedVehicle,
       });
       setNearbyResponders(data);
     } catch (err) {
@@ -377,6 +409,9 @@ function RequestsPage() {
                       )}
                       {showAssign && (
                         <div style={{ marginTop: 12, width: '100%', flexBasis: '100%' }}>
+                          <div style={{ marginBottom: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+                            AI suggestion ({selected?.aiSource === 'gemini' ? 'Gemini' : 'rules'}): Best vehicle is <strong>{selectedRecommendedVehicle}</strong>.
+                          </div>
                           {nearbyLoading ? (
                             <div className="nearby-loading">Searching for available responders...</div>
                           ) : nearbyError ? (
@@ -391,7 +426,7 @@ function RequestsPage() {
                             </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {nearbyResponders.map((r) => (
+                              {nearbyResponders.map((r, idx) => (
                                 <button
                                   key={r.id}
                                   type="button"
@@ -408,14 +443,22 @@ function RequestsPage() {
                                   }}
                                 >
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ fontWeight: 700, color: 'var(--navy)' }}>{r.name}</div>
-                                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                      {r.distance != null ? `${r.distance} km` : 'Location unknown'}
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                      <div style={{ fontWeight: 700, color: 'var(--navy)' }}>{r.name}</div>
+                                      <span className="badge badge-assigned">{r.vehicleType || 'Ambulance'}</span>
+                                      <span className={`badge ${r.onlineState === 'Online' ? 'badge-resolved' : r.onlineState === 'Idle' ? 'badge-assigned' : 'badge-cancelled'}`}>
+                                        {r.onlineState || 'Offline'}
+                                      </span>
+                                      {idx === 0 && <span className="badge badge-pending">Best match</span>}
+                                    </div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                      {r.distance != null ? `${r.distance} km away` : 'Distance unknown'}
                                     </div>
                                   </div>
-                                  <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-secondary)' }}>
-                                    {r.phone ? `${r.phone} • ` : ''}
-                                    {r.availability}
+                                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--text-secondary)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                    <span>{r.phone ? `Phone: ${r.phone}` : 'Phone: N/A'}</span>
+                                    <span>Status update: {formatStale(r.staleSeconds)}</span>
+                                    <span>Availability: {r.availability}</span>
                                   </div>
                                 </button>
                               ))}

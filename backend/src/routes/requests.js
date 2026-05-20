@@ -8,6 +8,7 @@ const {
   normalizeIncomingReference,
   isMongoObjectIdString,
 } = require('../utils/requestReference');
+const { analyzeEmergencyInput } = require('../utils/emergencyAi');
 
 const router = express.Router();
 
@@ -34,6 +35,10 @@ function mapRequest(doc) {
   return {
     id: doc._id.toString(),
     referenceCode: displayReference(doc),
+    priority: doc.priority || 'High',
+    incidentType: doc.incidentType || 'general',
+    recommendedVehicle: doc.recommendedVehicle || 'Ambulance',
+    aiSource: doc.aiSource || 'rules',
     userId: doc.userId || 'U1',
     userName: doc.userName || 'Citizen',
     userPhone: doc.userPhone,
@@ -68,6 +73,22 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('Fetch requests error:', err.message);
     res.status(500).json({ message: 'Failed to fetch requests' });
+  }
+});
+
+// POST /api/requests/analyze
+// Body: { description, location? }
+router.post('/analyze', async (req, res) => {
+  try {
+    const { description, location } = req.body || {};
+    if (!description || !String(description).trim()) {
+      return res.status(400).json({ message: 'description is required' });
+    }
+    const result = await analyzeEmergencyInput({ description, location });
+    return res.json(result);
+  } catch (err) {
+    console.error('Analyze request text error:', err.message);
+    return res.status(500).json({ message: 'Failed to analyze emergency text' });
   }
 });
 
@@ -164,15 +185,19 @@ router.patch('/:id/status', async (req, res) => {
 // POST /api/requests
 router.post('/', async (req, res) => {
   try {
-    const { description, location, coordinates, photoUrl, userId, userName, userPhone } = req.body;
+    const { description, location, coordinates, photoUrl, userId, userName, userPhone, priority } = req.body;
 
     if (!description || !location || !coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
       return res.status(400).json({ message: 'Missing or invalid fields' });
     }
 
+    const analysis = await analyzeEmergencyInput({ description, location });
+    const allowedPriority = new Set(['Critical', 'High', 'Medium', 'Low']);
+    const finalPriority = allowedPriority.has(priority) ? priority : analysis.priority;
+
     const referenceCode = await allocateReferenceCode(Request);
     const doc = await Request.create({
-      description,
+      description: analysis.cleanedDescription,
       location,
       coordinates,
       photoUrl,
@@ -180,6 +205,10 @@ router.post('/', async (req, res) => {
       userName,
       userPhone,
       referenceCode,
+      priority: finalPriority,
+      incidentType: analysis.incidentType || 'general',
+      recommendedVehicle: analysis.recommendedVehicle || 'Ambulance',
+      aiSource: analysis.source || 'rules',
     });
 
     res.status(201).json(mapRequest(doc));
